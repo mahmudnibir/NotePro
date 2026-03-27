@@ -7,6 +7,7 @@ import { ArrowRight, Search } from "lucide-react"
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FeaturesSection } from './FeaturesSection'
+import { AboutSection } from './AboutSection'
 export function LandingPage() {
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false)
 
@@ -53,6 +54,8 @@ export function LandingPage() {
         </section>
 
         <FeaturesSection />
+
+        <AboutSection />
 
         <section className="py-20 bg-secondary/10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

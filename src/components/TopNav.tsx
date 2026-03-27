@@ -31,6 +31,7 @@ export function TopNav({ setIsCommandMenuOpen }: TopNavProps) {
           <div className="hidden md:flex items-center space-x-4">
             <Link to="/" className="hover:text-primary bg-secondary/50 px-3 py-2 rounded-md">Home</Link>
             <Link to="/notes" className="hover:text-primary">My Notes</Link>
+            <a href="#about" className="hover:text-primary">About</a>
             {/* <a href="#features" className="hover:text-primary">Features</a> */}
           </div>
           <div className="flex items-center space-x-4">
