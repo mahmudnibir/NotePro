@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -19,57 +19,99 @@ export function NoteEditor() {
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [noteId, setNoteId] = useState<string | null>(id ?? null);
   const isEditing = id !== undefined;
+  const noteIdRef = useRef<string | null>(id ?? null);
+  const isSavingRef = useRef(false);
+  const queuedPayloadRef = useRef<{ title: string; content: string; tags: string[] } | null>(null);
+  const lastSavedSignatureRef = useRef<string>('');
 
-  useEffect(() => {
-    if (isEditing) {
-      loadNote();
-    }
-  }, [id]);
+  const setCurrentNoteId = (nextId: string | null) => {
+    noteIdRef.current = nextId;
+    setNoteId(nextId);
+  };
 
-  useEffect(() => {
-    if (isLoading) return;
-    if (!title.trim()) return;
-
-    const autoSaveTimer = setTimeout(async () => {
-      try {
-        setIsSaving(true);
-        const tagsArray = normalizeTagsInput(tags);
-        const payload = { title: title.trim(), content, tags: tagsArray };
-
-        if (noteId) {
-          await updateNote(noteId, payload);
-        } else {
-          const created = await createNote(payload);
-          setNoteId(created.id);
-          navigate(`/note/${created.id}/edit`, { replace: true });
-        }
-
-        setLastSavedAt(Date.now());
-      } catch (error) {
-        toast.error('Auto-save failed');
-      } finally {
-        setIsSaving(false);
-      }
-    }, 800);
-
-    return () => clearTimeout(autoSaveTimer);
-  }, [title, content, tags, noteId, isLoading, navigate]);
-
-  const loadNote = async () => {
+  const loadNote = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await fetchNote(id as string);
       setTitle(response.title);
       setContent(response.content);
       setTags(response.tags.join(', '));
-      setNoteId(response.id);
-    } catch (error) {
+      setCurrentNoteId(response.id);
+      lastSavedSignatureRef.current = JSON.stringify({
+        title: response.title.trim(),
+        content: response.content,
+        tags: normalizeTagsInput(response.tags.join(', ')),
+      });
+    } catch {
       toast.error('Failed to load note');
       navigate('/notes');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [id, navigate]);
+
+  const performAutoSave = useCallback(
+    async (payload: { title: string; content: string; tags: string[] }) => {
+      const signature = JSON.stringify(payload);
+      if (signature === lastSavedSignatureRef.current) {
+        return;
+      }
+
+      if (isSavingRef.current) {
+        queuedPayloadRef.current = payload;
+        return;
+      }
+
+      isSavingRef.current = true;
+      setIsSaving(true);
+
+      try {
+        const currentNoteId = noteIdRef.current;
+        if (currentNoteId) {
+          await updateNote(currentNoteId, payload);
+        } else {
+          const created = await createNote(payload);
+          setCurrentNoteId(created.id);
+          navigate(`/note/${created.id}/edit`, { replace: true });
+        }
+
+        lastSavedSignatureRef.current = signature;
+        setLastSavedAt(Date.now());
+      } catch {
+        toast.error('Auto-save failed');
+      } finally {
+        isSavingRef.current = false;
+        const queued = queuedPayloadRef.current;
+        queuedPayloadRef.current = null;
+
+        if (queued) {
+          void performAutoSave(queued);
+        } else {
+          setIsSaving(false);
+        }
+      }
+    },
+    [navigate]
+  );
+
+  useEffect(() => {
+    if (isEditing) {
+      void loadNote();
+    }
+  }, [isEditing, loadNote]);
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (!title.trim()) return;
+
+    const autoSaveTimer = setTimeout(async () => {
+      const tagsArray = normalizeTagsInput(tags);
+      const payload = { title: title.trim(), content, tags: tagsArray };
+      await performAutoSave(payload);
+    }, 800);
+
+    return () => clearTimeout(autoSaveTimer);
+  }, [title, content, tags, isLoading, performAutoSave]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">

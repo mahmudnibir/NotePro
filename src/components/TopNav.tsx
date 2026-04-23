@@ -41,9 +41,9 @@ export function TopNav({ onMenuClick, searchTerm, setSearchTerm }: TopNavProps) 
 
   return (
     <nav className="sticky top-0 z-50 w-full bg-white border-b border-gray-200">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-4">
         <div className="flex justify-between h-14 items-center">
-          <Link to="/" className="flex items-center space-x-2 -ml-2">
+          <Link to="/" className="flex items-center space-x-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black text-white font-bold text-base">
               N
             </div>

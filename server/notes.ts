@@ -8,12 +8,14 @@ export const notesRouter = Router();
 notesRouter.use(authenticate);
 
 const normalizeTags = (tags: unknown) => {
-  if (!Array.isArray(tags)) {
-    return [] as string[];
-  }
+  const source = Array.isArray(tags)
+    ? tags.map((tag) => String(tag))
+    : typeof tags === "string"
+    ? tags.split(",")
+    : [];
 
-  const normalized = tags
-    .map((tag) => String(tag).trim().toLowerCase())
+  const normalized = source
+    .map((tag) => tag.trim().toLowerCase())
     .filter((tag) => tag.length > 0);
 
   return Array.from(new Set(normalized));
@@ -61,6 +63,49 @@ const getPinnedNotesCount = async (userId: string, excludeNoteId?: string) => {
   return Number(result.rows[0]?.count ?? 0);
 };
 
+const getOrCreateTagId = async (userId: string, tagName: string) => {
+  const existing = await db.execute({
+    sql: "SELECT id FROM tags WHERE user_id = ? AND name = ? ORDER BY id LIMIT 1",
+    args: [userId, tagName],
+  });
+
+  const existingId = existing.rows[0]?.id;
+  if (existingId) {
+    return String(existingId);
+  }
+
+  const newTagId = uuidv4();
+
+  try {
+    await db.execute({
+      sql: "INSERT INTO tags (id, user_id, name) VALUES (?, ?, ?)",
+      args: [newTagId, userId, tagName],
+    });
+    return newTagId;
+  } catch (error: unknown) {
+    const code =
+      typeof error === "object" && error !== null && "code" in error
+        ? String((error as { code?: unknown }).code)
+        : "";
+
+    if (!code.includes("CONSTRAINT")) {
+      throw error;
+    }
+
+    const retry = await db.execute({
+      sql: "SELECT id FROM tags WHERE user_id = ? AND name = ? ORDER BY id LIMIT 1",
+      args: [userId, tagName],
+    });
+
+    const retryId = retry.rows[0]?.id;
+    if (!retryId) {
+      throw error;
+    }
+
+    return String(retryId);
+  }
+};
+
 notesRouter.get("/", async (req: AuthRequest, res: Response) => {
   try {
     await cleanupExpiredTrash();
@@ -81,7 +126,7 @@ notesRouter.get("/", async (req: AuthRequest, res: Response) => {
     }
 
     const result = await db.execute({
-      sql: `SELECT n.*, group_concat(t.name) as tags 
+      sql: `SELECT n.*, group_concat(DISTINCT t.name) as tags 
             FROM notes n 
             LEFT JOIN note_tags nt ON n.id = nt.note_id 
             LEFT JOIN tags t ON nt.tag_id = t.id 
@@ -125,7 +170,7 @@ notesRouter.get("/:id", async (req: AuthRequest, res: Response) => {
     const noteId = req.params.id;
 
     const result = await db.execute({
-      sql: `SELECT n.*, group_concat(t.name) as tags 
+      sql: `SELECT n.*, group_concat(DISTINCT t.name) as tags 
             FROM notes n 
             LEFT JOIN note_tags nt ON n.id = nt.note_id 
             LEFT JOIN tags t ON nt.tag_id = t.id 
@@ -205,23 +250,11 @@ notesRouter.post("/", async (req: AuthRequest, res: Response) => {
 
     if (normalizedTags.length > 0) {
       for (const tagName of normalizedTags) {
-        const tagResult = await db.execute({
-          sql: "SELECT id FROM tags WHERE user_id = ? AND name = ?",
-          args: [userId as string, tagName]
-        });
-        
-        let tagId = tagResult.rows[0]?.id;
-        if (!tagId) {
-          tagId = uuidv4();
-          await db.execute({
-            sql: "INSERT INTO tags (id, user_id, name) VALUES (?, ?, ?)",
-            args: [tagId, userId as string, tagName]
-          });
-        }
-        
+        const tagId = await getOrCreateTagId(userId as string, tagName);
+
         await db.execute({
-          sql: "INSERT INTO note_tags (note_id, tag_id) VALUES (?, ?)",
-          args: [noteId, tagId as string]
+          sql: "INSERT OR IGNORE INTO note_tags (note_id, tag_id) VALUES (?, ?)",
+          args: [noteId, tagId]
         });
       }
     }
@@ -309,23 +342,11 @@ notesRouter.put("/:id", async (req: AuthRequest, res: Response) => {
       });
 
       for (const tagName of normalizedTags) {
-        const tagResult = await db.execute({
-          sql: "SELECT id FROM tags WHERE user_id = ? AND name = ?",
-          args: [userId as string, tagName],
-        });
-
-        let tagId = tagResult.rows[0]?.id;
-        if (!tagId) {
-          tagId = uuidv4();
-          await db.execute({
-            sql: "INSERT INTO tags (id, user_id, name) VALUES (?, ?, ?)",
-            args: [tagId, userId as string, tagName],
-          });
-        }
+        const tagId = await getOrCreateTagId(userId as string, tagName);
 
         await db.execute({
-          sql: "INSERT INTO note_tags (note_id, tag_id) VALUES (?, ?)",
-          args: [noteId, tagId as string],
+          sql: "INSERT OR IGNORE INTO note_tags (note_id, tag_id) VALUES (?, ?)",
+          args: [noteId, tagId],
         });
       }
     }
