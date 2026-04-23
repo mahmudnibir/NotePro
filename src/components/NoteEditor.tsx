@@ -14,6 +14,7 @@ export function NoteEditor() {
   const [content, setContent] = useState('');
   const [tags, setTags] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const isEditing = id !== undefined;
 
   useEffect(() => {
@@ -21,6 +22,24 @@ export function NoteEditor() {
       loadNote();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (!isEditing || !title.trim() || isLoading) return;
+
+    const autoSaveTimer = setTimeout(async () => {
+      try {
+        setIsSaving(true);
+        const tagsArray = tags.split(',').map(t => t.trim()).filter(t => t);
+        await api.put(`/notes/${id}`, { title, content, tags: tagsArray });
+      } catch (error) {
+        console.error('Auto-save failed', error);
+      } finally {
+        setIsSaving(false);
+      }
+    }, 2000);
+
+    return () => clearTimeout(autoSaveTimer);
+  }, [title, content, tags, isEditing, id, isLoading]);
 
   const loadNote = async () => {
     try {
@@ -73,10 +92,11 @@ export function NoteEditor() {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
-          <div className="flex gap-2">
-            <Button onClick={handleSave} disabled={isLoading || !title.trim()} className="bg-black text-white hover:bg-gray-800">
+          <div className="flex gap-2 items-center">
+            {isSaving && <span className="text-xs text-gray-500 mr-2">Saving...</span>}
+            <Button onClick={handleSave} disabled={isLoading || !title.trim() || isSaving} className="bg-black text-white hover:bg-gray-800">
               <Save className="w-4 h-4 mr-2" />
-              {isLoading ? 'Saving...' : 'Save'}
+              {isLoading || isSaving ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </div>

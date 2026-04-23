@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
-import { Tag } from 'lucide-react';
+import { Tag, Archive, FileText } from 'lucide-react';
 import { LandingPage } from './components/LandingPage';
 import { Footer } from './components/Footer';
 import { AuthPage } from './components/AuthPage';
@@ -28,6 +28,7 @@ function NotesDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentFilter, setCurrentFilter] = useState<'all' | 'archive' | 'trash'>('all');
 
   useEffect(() => {
     fetchNotes();
@@ -36,7 +37,8 @@ function NotesDashboard() {
   const fetchNotes = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get('/notes');
+      const url = currentFilter === 'archive' ? '/notes?filter=archive' : '/notes';
+      const response = await api.get(url);
       setNotes(response.data);
     } catch (error) {
       toast.error('Failed to load notes');
@@ -45,19 +47,50 @@ function NotesDashboard() {
     }
   };
 
-  const filteredNotes = notes.filter(note => 
-    note.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    note.content.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    fetchNotes();
+  }, [currentFilter]);
+
+  const filteredNotes = notes.filter(note => {
+    const term = searchTerm.toLowerCase();
+    const searchMatch = note.title.toLowerCase().includes(term) || note.content.toLowerCase().includes(term);
+    return searchMatch; // we handle archive/trash mainly on the backend or filter here if not using backend
+  });
+
+  // Client side filtering for archive (assuming backend returns all if no filter, or handles it)
+  // Let's modify logic to just filter locally if we have them, or refetch. 
+  // Wait, backend currently filters `is_archived = 0` for `/notes`.
+  // We need to modify backend to accept a query param or an endpoint.
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <TopNav onMenuClick={() => setIsCommandMenuOpen(true)} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
       <div className="flex-grow flex overflow-hidden">
+        {/* Sidebar */}
+        <aside className="w-64 bg-white border-r border-gray-200 hidden md:flex flex-col p-4">
+          <nav className="space-y-2">
+             <button 
+               onClick={() => setCurrentFilter('all')}
+               className={`w-full flex items-center px-4 py-2 text-sm font-medium rounded-md ${currentFilter === 'all' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
+             >
+               <FileText className="w-5 h-5 mr-3 text-gray-500" />
+               Notes
+             </button>
+             <button 
+               onClick={() => setCurrentFilter('archive')}
+               className={`w-full flex items-center px-4 py-2 text-sm font-medium rounded-md ${currentFilter === 'archive' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
+             >
+               <Archive className="w-5 h-5 mr-3 text-gray-500" />
+               Archive
+             </button>
+             {/* Trash is not yet fully implemented, skipping to keep it simple or implement later if requested */}
+          </nav>
+        </aside>
+
         <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
           <div className="max-w-6xl mx-auto space-y-6">
             <div className="flex justify-between items-center">
-              <h1 className="text-3xl font-bold text-gray-900">My Notes</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{currentFilter === 'all' ? 'My Notes' : currentFilter === 'archive' ? 'Archived Notes' : 'Notes'}</h1>
               <Link to="/note/new" className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors inline-block text-sm font-medium shadow-sm">
                 New Note
               </Link>
@@ -77,7 +110,7 @@ function NotesDashboard() {
                 </Link>
               </div>
             ) : (
-              <NotesList notes={filteredNotes} />
+              <NotesList notes={filteredNotes} onNotesUpdate={fetchNotes} />
             )}
           </div>
         </main>

@@ -10,15 +10,21 @@ notesRouter.use(authenticate);
 notesRouter.get("/", async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId;
+    const filter = req.query.filter as string;
+    const isArchived = filter === "archive" ? 1 : 0;
+    
+    // We don't have a "trash" concept yet, maybe we just use archive for now or add is_deleted later.
+    // Using is_archived purely for now.
+    
     const result = await db.execute({
       sql: `SELECT n.*, group_concat(t.name) as tags 
             FROM notes n 
             LEFT JOIN note_tags nt ON n.id = nt.note_id 
             LEFT JOIN tags t ON nt.tag_id = t.id 
-            WHERE n.user_id = ? AND n.is_archived = 0 
+            WHERE n.user_id = ? AND n.is_archived = ? 
             GROUP BY n.id 
             ORDER BY n.updated_at DESC`,
-      args: [userId as string]
+      args: [userId as string, isArchived]
     });
 
     const notes = result.rows.map((row) => ({
@@ -26,6 +32,7 @@ notesRouter.get("/", async (req: AuthRequest, res: Response) => {
       title: row.title,
       content: row.content,
       isArchived: Boolean(row.is_archived),
+      isPinned: Boolean(row.is_pinned),
       tags: row.tags ? String(row.tags).split(",") : [],
       createdAt: new Date(row.created_at as string).getTime(),
       updatedAt: new Date(row.updated_at as string).getTime(),
@@ -63,6 +70,7 @@ notesRouter.get("/:id", async (req: AuthRequest, res: Response) => {
       title: row.title,
       content: row.content,
       isArchived: Boolean(row.is_archived),
+      isPinned: Boolean(row.is_pinned),
       tags: row.tags ? String(row.tags).split(",") : [],
       createdAt: new Date(row.created_at as string).getTime(),
       updatedAt: new Date(row.updated_at as string).getTime(),
@@ -78,7 +86,7 @@ notesRouter.get("/:id", async (req: AuthRequest, res: Response) => {
 notesRouter.post("/", async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId;
-    const { title, content, tags } = req.body;
+    const { title, content, tags, isPinned, isArchived } = req.body;
     
     if (!title) {
       return res.status(400).json({ error: "Title is required" });
@@ -86,8 +94,8 @@ notesRouter.post("/", async (req: AuthRequest, res: Response) => {
 
     const noteId = uuidv4();
     await db.execute({
-      sql: "INSERT INTO notes (id, user_id, title, content) VALUES (?, ?, ?, ?)",
-      args: [noteId, userId as string, title, content || ""]
+      sql: "INSERT INTO notes (id, user_id, title, content, is_pinned, is_archived) VALUES (?, ?, ?, ?, ?, ?)",
+      args: [noteId, userId as string, title, content || "", isPinned ? 1 : 0, isArchived ? 1 : 0]
     });
 
     if (tags && Array.isArray(tags)) {
@@ -124,11 +132,11 @@ notesRouter.put("/:id", async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId;
     const noteId = req.params.id;
-    const { title, content, isArchived, tags } = req.body;
+    const { title, content, isArchived, isPinned, tags } = req.body;
 
     await db.execute({
-      sql: "UPDATE notes SET title = ?, content = ?, is_archived = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
-      args: [title, content, isArchived ? 1 : 0, noteId, userId as string]
+      sql: "UPDATE notes SET title = COALESCE(?, title), content = COALESCE(?, content), is_archived = COALESCE(?, is_archived), is_pinned = COALESCE(?, is_pinned), updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
+      args: [title, content, isArchived !== undefined ? (isArchived ? 1 : 0) : null, isPinned !== undefined ? (isPinned ? 1 : 0) : null, noteId, userId as string]
     });
     
     await db.execute({
