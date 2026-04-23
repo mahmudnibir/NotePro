@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import TipTapEditor from './TipTapEditor';
 import { toast } from 'react-hot-toast';
-import api from '../lib/api';
+import { createNote, fetchNote, updateNote } from '../features/notes/notesApi';
+import { normalizeTagsInput } from '../features/notes/noteUtils';
 
 export function NoteEditor() {
   const { id } = useParams();
@@ -15,6 +16,8 @@ export function NoteEditor() {
   const [tags, setTags] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [noteId, setNoteId] = useState<string | null>(id ?? null);
   const isEditing = id !== undefined;
 
   useEffect(() => {
@@ -24,61 +27,45 @@ export function NoteEditor() {
   }, [id]);
 
   useEffect(() => {
-    if (!isEditing || !title.trim() || isLoading) return;
+    if (isLoading) return;
+    if (!title.trim()) return;
 
     const autoSaveTimer = setTimeout(async () => {
       try {
         setIsSaving(true);
-        const tagsArray = tags.split(',').map(t => t.trim()).filter(t => t);
-        await api.put(`/notes/${id}`, { title, content, tags: tagsArray });
+        const tagsArray = normalizeTagsInput(tags);
+        const payload = { title: title.trim(), content, tags: tagsArray };
+
+        if (noteId) {
+          await updateNote(noteId, payload);
+        } else {
+          const created = await createNote(payload);
+          setNoteId(created.id);
+          navigate(`/note/${created.id}/edit`, { replace: true });
+        }
+
+        setLastSavedAt(Date.now());
       } catch (error) {
-        console.error('Auto-save failed', error);
+        toast.error('Auto-save failed');
       } finally {
         setIsSaving(false);
       }
-    }, 2000);
+    }, 800);
 
     return () => clearTimeout(autoSaveTimer);
-  }, [title, content, tags, isEditing, id, isLoading]);
+  }, [title, content, tags, noteId, isLoading, navigate]);
 
   const loadNote = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get(`/notes/${id}`);
-      setTitle(response.data.title);
-      setContent(response.data.content);
-      setTags(response.data.tags.join(', '));
+      const response = await fetchNote(id as string);
+      setTitle(response.title);
+      setContent(response.content);
+      setTags(response.tags.join(', '));
+      setNoteId(response.id);
     } catch (error) {
       toast.error('Failed to load note');
       navigate('/notes');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSave = async () => {
-    if (!title.trim()) {
-      toast.error('Please enter a title');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const tagsArray = tags.split(',').map(t => t.trim()).filter(t => t);
-      
-      const payload = { title, content, tags: tagsArray };
-
-      if (isEditing) {
-        await api.put(`/notes/${id}`, payload);
-        toast.success('Note updated');
-        navigate(`/note/${id}`);
-      } else {
-        const res = await api.post('/notes', payload);
-        toast.success('Note created');
-        navigate(`/note/${res.data.id}`);
-      }
-    } catch (error) {
-      toast.error('Failed to save note');
     } finally {
       setIsLoading(false);
     }
@@ -93,11 +80,16 @@ export function NoteEditor() {
             Back
           </Button>
           <div className="flex gap-2 items-center">
-            {isSaving && <span className="text-xs text-gray-500 mr-2">Saving...</span>}
-            <Button onClick={handleSave} disabled={isLoading || !title.trim() || isSaving} className="bg-black text-white hover:bg-gray-800">
-              <Save className="w-4 h-4 mr-2" />
-              {isLoading || isSaving ? 'Saving...' : 'Save'}
-            </Button>
+            {isSaving ? (
+              <span className="text-xs text-gray-500 mr-2">Saving...</span>
+            ) : lastSavedAt ? (
+              <span className="text-xs text-gray-500 mr-2">Saved</span>
+            ) : null}
+            {noteId && (
+              <Button onClick={() => navigate(`/note/${noteId}`)} className="bg-black text-white hover:bg-gray-800">
+                Done
+              </Button>
+            )}
           </div>
         </div>
 

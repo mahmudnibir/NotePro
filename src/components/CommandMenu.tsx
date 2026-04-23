@@ -46,7 +46,7 @@ export function CommandMenu({ isOpen, setIsOpen, notes, tags }: CommandMenuProps
                 <CommandItem
                   key={tag}
                   onSelect={() => {
-                    navigate(`/?tag=${tag}`);
+                    navigate(`/notes?tag=${encodeURIComponent(tag)}`);
                     setIsOpen(false);
                   }}
                 >

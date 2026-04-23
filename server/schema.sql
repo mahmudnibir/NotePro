@@ -11,7 +11,10 @@ CREATE TABLE IF NOT EXISTS notes (
   title TEXT NOT NULL,
   content TEXT,
   folder_id TEXT,
+  is_pinned BOOLEAN DEFAULT 0,
   is_archived BOOLEAN DEFAULT 0,
+  archived_at DATETIME,
+  deleted_at DATETIME,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

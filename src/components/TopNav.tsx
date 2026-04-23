@@ -1,9 +1,10 @@
 import { Button } from "./ui/button"
 import { Command, LogOut, Search } from "lucide-react"
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { Input } from "./ui/input"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog"
 
 interface TopNavProps {
   onMenuClick: () => void
@@ -14,6 +15,7 @@ interface TopNavProps {
 export function TopNav({ onMenuClick, searchTerm, setSearchTerm }: TopNavProps) {
   const navigate = useNavigate()
   const location = useLocation()
+  const [isSignOutOpen, setIsSignOutOpen] = useState(false)
   
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -41,7 +43,7 @@ export function TopNav({ onMenuClick, searchTerm, setSearchTerm }: TopNavProps) 
     <nav className="sticky top-0 z-50 w-full bg-white border-b border-gray-200">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-14 items-center">
-          <Link to="/" className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-2 -ml-1">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black text-white font-bold text-base">
               N
             </div>
@@ -72,17 +74,43 @@ export function TopNav({ onMenuClick, searchTerm, setSearchTerm }: TopNavProps) 
               ?K
             </Button>
             
-            <Button variant="ghost" size="sm" onClick={handleLogout} className="text-gray-600 hover:text-red-600 h-8 hidden sm:flex">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsSignOutOpen(true)}
+              className="text-gray-600 hover:text-red-600 h-8 hidden sm:flex"
+            >
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
             </Button>
             
-            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-gray-600 hover:text-red-600 sm:hidden h-8 w-8">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSignOutOpen(true)}
+              className="text-gray-600 hover:text-red-600 sm:hidden h-8 w-8"
+            >
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </div>
+      <Dialog open={isSignOutOpen} onOpenChange={setIsSignOutOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sign out of NotePro?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-600">You can sign back in any time. Unsaved changes will be kept locally.</p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsSignOutOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleLogout} className="bg-black text-white hover:bg-gray-800">
+              Sign Out
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </nav>
   )
 }

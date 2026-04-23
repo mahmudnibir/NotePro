@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from './ui/button';
-import { ArrowLeft, Edit2, Tag as TagIcon, Calendar, Clock, Trash } from 'lucide-react';
+import { ArrowLeft, Edit2, Tag as TagIcon, Calendar, Clock, Trash2, Archive, RotateCcw } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { Badge } from './ui/badge';
-import api from '../lib/api';
+import type { Note } from '../features/notes/types';
+import { archiveNote, fetchNote, restoreNote, trashNote, unarchiveNote } from '../features/notes/notesApi';
 
 export function NoteView() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [note, setNote] = useState<any>(null);
+  const [note, setNote] = useState<Note | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -19,8 +20,8 @@ export function NoteView() {
   const loadNote = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get(`/notes/${id}`);
-      setNote(response.data);
+      const response = await fetchNote(id as string);
+      setNote(response);
     } catch (error) {
       toast.error('Failed to load note');
       navigate('/notes');
@@ -30,14 +31,41 @@ export function NoteView() {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this note?')) return;
-    
     try {
-      await api.delete(`/notes/${id}`);
-      toast.success('Note deleted');
+      await trashNote(id as string);
+      toast.success('Note moved to trash');
       navigate('/notes');
     } catch (error) {
       toast.error('Failed to delete note');
+    }
+  };
+
+  const handleArchiveToggle = async () => {
+    if (!note) return;
+
+    try {
+      if (note.isArchived) {
+        await unarchiveNote(note.id);
+        toast.success('Note restored from archive');
+      } else {
+        await archiveNote(note.id);
+        toast.success('Note archived');
+      }
+      loadNote();
+    } catch (error) {
+      toast.error('Failed to update archive status');
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!note) return;
+
+    try {
+      await restoreNote(note.id);
+      toast.success('Note restored');
+      navigate('/notes');
+    } catch (error) {
+      toast.error('Failed to restore note');
     }
   };
 
@@ -58,14 +86,29 @@ export function NoteView() {
             Back to Notes
           </Button>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleDelete} className="text-red-500 hover:text-red-600 hover:bg-red-50">
-              <Trash className="w-4 h-4 mr-2" />
-              Delete
-            </Button>
-            <Button onClick={() => navigate(`/note/${id}/edit`)} className="bg-black text-white hover:bg-gray-800">
-              <Edit2 className="w-4 h-4 mr-2" />
-              Edit Note
-            </Button>
+            {note.deletedAt ? (
+              <Button variant="outline" onClick={handleRestore} className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Restore
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={handleArchiveToggle} className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+                  <Archive className="w-4 h-4 mr-2" />
+                  {note.isArchived ? 'Unarchive' : 'Archive'}
+                </Button>
+                <Button variant="outline" onClick={handleDelete} className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Trash
+                </Button>
+              </>
+            )}
+            {!note.deletedAt && (
+              <Button onClick={() => navigate(`/note/${id}/edit`)} className="bg-black text-white hover:bg-gray-800">
+                <Edit2 className="w-4 h-4 mr-2" />
+                Edit Note
+              </Button>
+            )}
           </div>
         </div>
 
@@ -87,7 +130,12 @@ export function NoteView() {
                 <TagIcon className="w-4 h-4" />
                 <div className="flex flex-wrap gap-1">
                   {note.tags.map((tag: string) => (
-                    <Badge key={tag} variant="secondary" className="bg-gray-100 text-gray-700 hover:bg-gray-200">
+                    <Badge
+                      key={tag}
+                      variant="secondary"
+                      className="bg-gray-100 text-gray-700 hover:bg-gray-200 cursor-pointer"
+                      onClick={() => navigate(`/notes?tag=${encodeURIComponent(tag)}`)}
+                    >
                       {tag}
                     </Badge>
                   ))}

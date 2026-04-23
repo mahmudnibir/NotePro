@@ -7,32 +7,88 @@ export const notesRouter = Router();
 
 notesRouter.use(authenticate);
 
+const normalizeTags = (tags: unknown) => {
+  if (!Array.isArray(tags)) {
+    return [] as string[];
+  }
+
+  const normalized = tags
+    .map((tag) => String(tag).trim().toLowerCase())
+    .filter((tag) => tag.length > 0);
+
+  return Array.from(new Set(normalized));
+};
+
+const resolveTimestampInput = (value: unknown) => {
+  if (value === null) {
+    return null;
+  }
+
+  if (value === true) {
+    return new Date().toISOString();
+  }
+
+  if (typeof value === "string" || typeof value === "number") {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString();
+    }
+  }
+
+  return undefined;
+};
+
+const cleanupExpiredTrash = async () => {
+  await db.execute({
+    sql: "DELETE FROM notes WHERE deleted_at IS NOT NULL AND deleted_at <= datetime('now','-7 days')",
+    args: [],
+  });
+};
+
 notesRouter.get("/", async (req: AuthRequest, res: Response) => {
   try {
+    await cleanupExpiredTrash();
+
     const userId = req.userId;
     const filter = req.query.filter as string;
-    const isArchived = filter === "archive" ? 1 : 0;
-    
-    // We don't have a "trash" concept yet, maybe we just use archive for now or add is_deleted later.
-    // Using is_archived purely for now.
-    
+    const view = filter === "archive" || filter === "trash" ? filter : "all";
+
+    const whereClauses = ["n.user_id = ?"];
+    if (view === "trash") {
+      whereClauses.push("n.deleted_at IS NOT NULL");
+    } else if (view === "archive") {
+      whereClauses.push("(n.archived_at IS NOT NULL OR n.is_archived = 1)");
+      whereClauses.push("n.deleted_at IS NULL");
+    } else {
+      whereClauses.push("n.deleted_at IS NULL");
+      whereClauses.push("(n.archived_at IS NULL AND n.is_archived = 0)");
+    }
+
     const result = await db.execute({
       sql: `SELECT n.*, group_concat(t.name) as tags 
             FROM notes n 
             LEFT JOIN note_tags nt ON n.id = nt.note_id 
             LEFT JOIN tags t ON nt.tag_id = t.id 
-            WHERE n.user_id = ? AND n.is_archived = ? 
+            WHERE ${whereClauses.join(" AND ")}
             GROUP BY n.id 
-            ORDER BY n.updated_at DESC`,
-      args: [userId as string, isArchived]
+            ORDER BY n.is_pinned DESC, n.updated_at DESC`,
+      args: [userId as string]
     });
 
     const notes = result.rows.map((row) => ({
       id: row.id,
       title: row.title,
       content: row.content,
-      isArchived: Boolean(row.is_archived),
+      isArchived: Boolean(row.archived_at) || Boolean(row.is_archived),
       isPinned: Boolean(row.is_pinned),
+      archivedAt: row.archived_at
+        ? new Date(row.archived_at as string).getTime()
+        : row.is_archived
+        ? new Date(row.updated_at as string).getTime()
+        : null,
+      deletedAt: row.deleted_at
+        ? new Date(row.deleted_at as string).getTime()
+        : null,
       tags: row.tags ? String(row.tags).split(",") : [],
       createdAt: new Date(row.created_at as string).getTime(),
       updatedAt: new Date(row.updated_at as string).getTime(),
@@ -47,6 +103,8 @@ notesRouter.get("/", async (req: AuthRequest, res: Response) => {
 
 notesRouter.get("/:id", async (req: AuthRequest, res: Response) => {
   try {
+    await cleanupExpiredTrash();
+
     const userId = req.userId;
     const noteId = req.params.id;
 
@@ -69,8 +127,16 @@ notesRouter.get("/:id", async (req: AuthRequest, res: Response) => {
       id: row.id,
       title: row.title,
       content: row.content,
-      isArchived: Boolean(row.is_archived),
+      isArchived: Boolean(row.archived_at) || Boolean(row.is_archived),
       isPinned: Boolean(row.is_pinned),
+      archivedAt: row.archived_at
+        ? new Date(row.archived_at as string).getTime()
+        : row.is_archived
+        ? new Date(row.updated_at as string).getTime()
+        : null,
+      deletedAt: row.deleted_at
+        ? new Date(row.deleted_at as string).getTime()
+        : null,
       tags: row.tags ? String(row.tags).split(",") : [],
       createdAt: new Date(row.created_at as string).getTime(),
       updatedAt: new Date(row.updated_at as string).getTime(),
@@ -86,20 +152,36 @@ notesRouter.get("/:id", async (req: AuthRequest, res: Response) => {
 notesRouter.post("/", async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId;
-    const { title, content, tags, isPinned, isArchived } = req.body;
+    const { title, content, tags, isPinned, isArchived, archivedAt, deletedAt } = req.body;
     
     if (!title) {
       return res.status(400).json({ error: "Title is required" });
     }
 
+    const normalizedTags = normalizeTags(tags);
+    const resolvedArchivedAt = resolveTimestampInput(archivedAt);
+    const resolvedDeletedAt = resolveTimestampInput(deletedAt);
+    const isArchivedValue = resolvedArchivedAt !== undefined
+      ? resolvedArchivedAt !== null
+      : Boolean(isArchived);
+
     const noteId = uuidv4();
     await db.execute({
-      sql: "INSERT INTO notes (id, user_id, title, content, is_pinned, is_archived) VALUES (?, ?, ?, ?, ?, ?)",
-      args: [noteId, userId as string, title, content || "", isPinned ? 1 : 0, isArchived ? 1 : 0]
+      sql: "INSERT INTO notes (id, user_id, title, content, is_pinned, is_archived, archived_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      args: [
+        noteId,
+        userId as string,
+        title,
+        content || "",
+        isPinned ? 1 : 0,
+        isArchivedValue ? 1 : 0,
+        resolvedArchivedAt ?? (isArchivedValue ? new Date().toISOString() : null),
+        resolvedDeletedAt ?? null,
+      ],
     });
 
-    if (tags && Array.isArray(tags)) {
-      for (const tagName of tags) {
+    if (normalizedTags.length > 0) {
+      for (const tagName of normalizedTags) {
         let tagResult = await db.execute({
           sql: "SELECT id FROM tags WHERE user_id = ? AND name = ?",
           args: [userId as string, tagName]
@@ -121,7 +203,7 @@ notesRouter.post("/", async (req: AuthRequest, res: Response) => {
       }
     }
 
-    res.status(201).json({ id: noteId, title, content, tags: tags || [] });
+    res.status(201).json({ id: noteId, title, content, tags: normalizedTags });
   } catch (error) {
     console.error("Create note error:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -132,37 +214,76 @@ notesRouter.put("/:id", async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId;
     const noteId = req.params.id;
-    const { title, content, isArchived, isPinned, tags } = req.body;
+    const { title, content, isArchived, isPinned, tags, archivedAt, deletedAt } = req.body;
 
-    await db.execute({
-      sql: "UPDATE notes SET title = COALESCE(?, title), content = COALESCE(?, content), is_archived = COALESCE(?, is_archived), is_pinned = COALESCE(?, is_pinned), updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
-      args: [title, content, isArchived !== undefined ? (isArchived ? 1 : 0) : null, isPinned !== undefined ? (isPinned ? 1 : 0) : null, noteId, userId as string]
-    });
-    
-    await db.execute({
-      sql: "DELETE FROM note_tags WHERE note_id = ?",
-      args: [noteId]
-    });
+    const fields: string[] = [];
+    const args: unknown[] = [];
 
-    if (tags && Array.isArray(tags)) {
-      for (const tagName of tags) {
+    if (title !== undefined) {
+      fields.push("title = ?");
+      args.push(title);
+    }
+
+    if (content !== undefined) {
+      fields.push("content = ?");
+      args.push(content ?? "");
+    }
+
+    if (isPinned !== undefined) {
+      fields.push("is_pinned = ?");
+      args.push(isPinned ? 1 : 0);
+    }
+
+    const resolvedArchivedAt = resolveTimestampInput(archivedAt);
+    if (resolvedArchivedAt !== undefined || isArchived !== undefined) {
+      const shouldArchive = resolvedArchivedAt !== undefined
+        ? resolvedArchivedAt !== null
+        : Boolean(isArchived);
+      fields.push("archived_at = ?");
+      args.push(resolvedArchivedAt ?? (shouldArchive ? new Date().toISOString() : null));
+      fields.push("is_archived = ?");
+      args.push(shouldArchive ? 1 : 0);
+    }
+
+    const resolvedDeletedAt = resolveTimestampInput(deletedAt);
+    if (resolvedDeletedAt !== undefined) {
+      fields.push("deleted_at = ?");
+      args.push(resolvedDeletedAt);
+    }
+
+    if (fields.length > 0) {
+      fields.push("updated_at = CURRENT_TIMESTAMP");
+      await db.execute({
+        sql: `UPDATE notes SET ${fields.join(", ")} WHERE id = ? AND user_id = ?`,
+        args: [...args, noteId, userId as string],
+      });
+    }
+
+    if (tags !== undefined) {
+      const normalizedTags = normalizeTags(tags);
+      await db.execute({
+        sql: "DELETE FROM note_tags WHERE note_id = ?",
+        args: [noteId],
+      });
+
+      for (const tagName of normalizedTags) {
         let tagResult = await db.execute({
           sql: "SELECT id FROM tags WHERE user_id = ? AND name = ?",
-          args: [userId as string, tagName]
+          args: [userId as string, tagName],
         });
-        
+
         let tagId = tagResult.rows[0]?.id;
         if (!tagId) {
           tagId = uuidv4();
           await db.execute({
             sql: "INSERT INTO tags (id, user_id, name) VALUES (?, ?, ?)",
-            args: [tagId, userId as string, tagName]
+            args: [tagId, userId as string, tagName],
           });
         }
-        
+
         await db.execute({
           sql: "INSERT INTO note_tags (note_id, tag_id) VALUES (?, ?)",
-          args: [noteId, tagId as string]
+          args: [noteId, tagId as string],
         });
       }
     }
@@ -178,15 +299,91 @@ notesRouter.delete("/:id", async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId;
     const noteId = req.params.id;
+    const permanent = req.query.permanent === "true";
 
-    await db.execute({
-      sql: "DELETE FROM notes WHERE id = ? AND user_id = ?",
-      args: [noteId, userId as string]
-    });
+    if (permanent) {
+      await db.execute({
+        sql: "DELETE FROM notes WHERE id = ? AND user_id = ?",
+        args: [noteId, userId as string],
+      });
+    } else {
+      await db.execute({
+        sql: "UPDATE notes SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
+        args: [noteId, userId as string],
+      });
+    }
 
-    res.json({ message: "Note deleted successfully" });
+    res.json({ message: permanent ? "Note deleted permanently" : "Note moved to trash" });
   } catch (error) {
     console.error("Delete note error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+notesRouter.post("/:id/trash", async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId;
+    const noteId = req.params.id;
+
+    await db.execute({
+      sql: "UPDATE notes SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
+      args: [noteId, userId as string],
+    });
+
+    res.json({ message: "Note moved to trash" });
+  } catch (error) {
+    console.error("Trash note error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+notesRouter.post("/:id/restore", async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId;
+    const noteId = req.params.id;
+
+    await db.execute({
+      sql: "UPDATE notes SET deleted_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
+      args: [noteId, userId as string],
+    });
+
+    res.json({ message: "Note restored" });
+  } catch (error) {
+    console.error("Restore note error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+notesRouter.post("/:id/archive", async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId;
+    const noteId = req.params.id;
+
+    await db.execute({
+      sql: "UPDATE notes SET archived_at = CURRENT_TIMESTAMP, is_archived = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
+      args: [noteId, userId as string],
+    });
+
+    res.json({ message: "Note archived" });
+  } catch (error) {
+    console.error("Archive note error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+notesRouter.post("/:id/unarchive", async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId;
+    const noteId = req.params.id;
+
+    await db.execute({
+      sql: "UPDATE notes SET archived_at = NULL, is_archived = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
+      args: [noteId, userId as string],
+    });
+
+    res.json({ message: "Note unarchived" });
+  } catch (error) {
+    console.error("Unarchive note error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
