@@ -7,23 +7,28 @@ import { ArrowRight, Search } from "lucide-react"
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FeaturesSection } from './FeaturesSection'
+import { ThemeToggle } from './ThemeToggle'
 export function LandingPage() {
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false)
+  const isLoggedIn = !!localStorage.getItem('auth_token')
 
   return (
     <div className="min-h-screen flex flex-col">
 
       <main className="flex-grow">
-        <section className="bg-white text-primary min-h-[calc(100vh-4rem)] flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8 relative overflow-hidden border-b border-border">
+        <div className="absolute top-4 right-4 z-50">
+          <ThemeToggle />
+        </div>
+        <section className="bg-background text-primary min-h-[calc(100vh-4rem)] flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8 relative overflow-hidden border-b border-border">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             className="relative z-10"
           >
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold mb-6 text-gray-700 leading-tight">
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold mb-6 text-foreground leading-tight">
                Your Thoughts,{' '}
-              <span className="text-black">
+              <span className="text-primary">
                 Organized!
               </span>
             </h1>
@@ -32,8 +37,8 @@ export function LandingPage() {
             </p>
             <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
               <Button asChild size="lg" className="text-lg group">
-                <Link to="/notes">
-                  Get Started
+                <Link to={isLoggedIn ? "/notes" : "/auth"}>
+                  {isLoggedIn ? "Go to Dashboard" : "Get Started"}
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Link>
               </Button>
@@ -66,7 +71,9 @@ export function LandingPage() {
                 whileTap={{ scale: 0.95 }}
               >
                 <Button asChild size="lg" className="text-lg px-8">
-                  <Link to="/notes">Start Organizing Now</Link>
+                  <Link to={isLoggedIn ? "/notes" : "/auth"}>
+                    {isLoggedIn ? "Go to Dashboard" : "Start Organizing Now"}
+                  </Link>
                 </Button>
               </motion.div>
             </div>

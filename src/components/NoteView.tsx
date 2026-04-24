@@ -1,88 +1,155 @@
-import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Button } from "@/components/ui/button"
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
-import { Calendar, Clock, Tag } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Button } from './ui/button';
+import { ArrowLeft, Edit2, Tag as TagIcon, Calendar, Clock, Trash2, Archive, RotateCcw } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { Badge } from './ui/badge';
+import type { Note } from '../features/notes/types';
+import { archiveNote, fetchNote, restoreNote, trashNote, unarchiveNote } from '../features/notes/notesApi';
 
-interface Note {
-  id: string
-  title: string
-  content: string
-  tags: string[]
-  createdAt: number
-  updatedAt: number
-}
+export function NoteView() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [note, setNote] = useState<Note | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-interface NoteViewProps {
-  notes: Note[]
-  onDelete: (id: string) => void
-}
+  const loadNote = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetchNote(id as string);
+      setNote(response);
+    } catch {
+      toast.error('Failed to load note');
+      navigate('/notes');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [id, navigate]);
 
-export function NoteView({ notes, onDelete }: NoteViewProps) {
-  const { id } = useParams()
-  const navigate = useNavigate()
-  const note = notes.find(n => n.id === id)
+  useEffect(() => {
+    loadNote();
+  }, [loadNote]);
 
-  if (!note) {
-    return <div className="text-center py-10">Note not found</div>
+  const handleDelete = async () => {
+    try {
+      await trashNote(id as string);
+      toast.success('Note moved to trash');
+      navigate('/notes');
+    } catch {
+      toast.error('Failed to delete note');
+    }
+  };
+
+  const handleArchiveToggle = async () => {
+    if (!note) return;
+
+    try {
+      if (note.isArchived) {
+        await unarchiveNote(note.id);
+        toast.success('Note restored from archive');
+      } else {
+        await archiveNote(note.id);
+        toast.success('Note archived');
+      }
+      loadNote();
+    } catch {
+      toast.error('Failed to update archive status');
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!note) return;
+
+    try {
+      await restoreNote(note.id);
+      toast.success('Note restored');
+      navigate('/notes');
+    } catch {
+      toast.error('Failed to restore note');
+    }
+  };
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-background p-8 flex justify-center items-center text-foreground">Loading...</div>;
   }
 
-  const handleDelete = () => {
-    onDelete(note.id)
-    navigate('/')
+  if (!note) {
+    return <div className="min-h-screen bg-background p-8 flex justify-center items-center text-foreground">Note not found</div>;
   }
 
   return (
-    <Card className="max-w-4xl mx-auto my-8 shadow-lg">
-      <CardHeader className="space-y-4">
-        <CardTitle className="text-3xl font-bold text-primary">{note.title}</CardTitle>
-        <div className="flex flex-wrap gap-2">
-          {note.tags.map((tag) => (
-            <Badge key={tag} variant="secondary" className="px-2 py-1">
-              <Tag className="w-4 h-4 mr-1 inline" />
-              {tag}
-            </Badge>
-          ))}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="whitespace-pre-wrap text-lg leading-relaxed">{note.content}</p>
-      </CardContent>
-      <CardFooter className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-        <div className="text-sm text-muted-foreground space-y-1">
-          <div className="flex items-center">
-            <Calendar className="w-4 h-4 mr-2" />
-            Created: {new Date(note.createdAt).toLocaleString()}
-          </div>
-          <div className="flex items-center">
-            <Clock className="w-4 h-4 mr-2" />
-            Updated: {new Date(note.updatedAt).toLocaleString()}
-          </div>
-        </div>
-        <div className="space-x-2 flex">
-          <Button variant="outline" asChild>
-            <Link to={`/edit/${note.id}`}>Edit</Link>
+    <div className="min-h-screen bg-background p-4 md:p-8">
+      <div className="max-w-4xl mx-auto bg-surface rounded-lg shadow-sm border border-border overflow-hidden min-h-[80vh] flex flex-col">
+        <div className="border-b border-border p-4 flex items-center justify-between bg-muted/50">
+          <Button variant="ghost" onClick={() => navigate('/notes')} className="text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Notes
           </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive">Delete</Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete your note.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <div className="flex gap-2">
+            {note.deletedAt ? (
+              <Button variant="outline" onClick={handleRestore} className="text-muted-foreground hover:text-foreground hover:bg-accent">
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Restore
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={handleArchiveToggle} className="text-muted-foreground hover:text-foreground hover:bg-accent">
+                  <Archive className="w-4 h-4 mr-2" />
+                  {note.isArchived ? 'Unarchive' : 'Archive'}
+                </Button>
+                <Button variant="outline" onClick={handleDelete} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Trash
+                </Button>
+              </>
+            )}
+            {!note.deletedAt && (
+              <Button onClick={() => navigate(`/note/${id}/edit`)} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                <Edit2 className="w-4 h-4 mr-2" />
+                Edit Note
+              </Button>
+            )}
+          </div>
         </div>
-      </CardFooter>
-    </Card>
-  )
+
+        <div className="p-8 flex-grow flex flex-col">
+          <h1 className="text-4xl font-bold text-foreground mb-6">{note.title}</h1>
+          
+          <div className="flex items-center gap-6 text-sm text-muted-foreground mb-8 pb-6 border-b border-border flex-wrap">
+            <div className="flex items-center">
+              <Calendar className="w-4 h-4 mr-2" />
+              Created {new Date(note.createdAt).toLocaleDateString()}
+            </div>
+            <div className="flex items-center">
+              <Clock className="w-4 h-4 mr-2" />
+              Updated {new Date(note.updatedAt).toLocaleDateString()}
+            </div>
+            
+            {note.tags && note.tags.length > 0 && (
+              <div className="flex items-center gap-2">
+                <TagIcon className="w-4 h-4" />
+                <div className="flex flex-wrap gap-1">
+                  {note.tags.map((tag: string) => (
+                    <Badge
+                      key={tag}
+                      variant="secondary"
+                      className="bg-secondary text-secondary-foreground hover:bg-secondary/80 cursor-pointer"
+                      onClick={() => navigate(`/notes?tag=${encodeURIComponent(tag)}`)}
+                    >
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div 
+            className="prose prose-slate dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-muted"
+            dangerouslySetInnerHTML={{ __html: note.content || '<p class="text-muted-foreground italic">Empty note</p>' }}
+          />
+        </div>
+      </div>
+    </div>
+  );
 }
