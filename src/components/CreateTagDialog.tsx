@@ -67,7 +67,7 @@ export function CreateTagDialog({ open, onOpenChange, onCreated }: CreateTagDial
             placeholder="work, urgent, idea"
             autoFocus
           />
-          <p className="text-xs text-gray-500">Use commas to create multiple tags at once.</p>
+          <p className="text-xs text-muted-foreground">Use commas to create multiple tags at once.</p>
         </div>
 
         <DialogFooter>

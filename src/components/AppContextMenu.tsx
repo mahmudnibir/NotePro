@@ -102,13 +102,13 @@ export function AppContextMenu({
           <div
             ref={menuRef}
             role="menu"
-            className="fixed z-50 w-[156px] rounded-md border border-gray-200 bg-white p-0.5 shadow-lg"
+            className="fixed z-50 w-[156px] rounded-md border border-border bg-popover p-0.5 shadow-lg text-popover-foreground"
             style={{ left: adjustedPosition?.x ?? position.x, top: adjustedPosition?.y ?? position.y }}
           >
             <button
               type="button"
               role="menuitem"
-              className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-gray-700 hover:bg-gray-100"
+              className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-foreground hover:bg-accent hover:text-accent-foreground"
               onClick={() => handleAction(onNewNote)}
             >
               New Note
@@ -116,16 +116,16 @@ export function AppContextMenu({
             <button
               type="button"
               role="menuitem"
-              className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-gray-700 hover:bg-gray-100"
+              className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-foreground hover:bg-accent hover:text-accent-foreground"
               onClick={() => handleAction(onNewTag)}
             >
               New Tag
             </button>
-            <div className="my-0.5 h-px bg-gray-100" />
+            <div className="my-0.5 h-px bg-border" />
             <button
               type="button"
               role="menuitem"
-              className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-gray-700 hover:bg-gray-100"
+              className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-foreground hover:bg-accent hover:text-accent-foreground"
               onClick={() => handleAction(onOpenTrash)}
             >
               Open Trash
@@ -133,7 +133,7 @@ export function AppContextMenu({
             <button
               type="button"
               role="menuitem"
-              className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-gray-700 hover:bg-gray-100"
+              className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-foreground hover:bg-accent hover:text-accent-foreground"
               onClick={() => handleAction(onOpenArchive)}
             >
               Open Archive

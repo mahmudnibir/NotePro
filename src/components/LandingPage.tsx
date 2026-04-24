@@ -14,16 +14,16 @@ export function LandingPage() {
     <div className="min-h-screen flex flex-col">
 
       <main className="flex-grow">
-        <section className="bg-white text-primary min-h-[calc(100vh-4rem)] flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8 relative overflow-hidden border-b border-border">
+        <section className="bg-background text-primary min-h-[calc(100vh-4rem)] flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8 relative overflow-hidden border-b border-border">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             className="relative z-10"
           >
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold mb-6 text-gray-700 leading-tight">
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold mb-6 text-foreground leading-tight">
                Your Thoughts,{' '}
-              <span className="text-black">
+              <span className="text-primary">
                 Organized!
               </span>
             </h1>

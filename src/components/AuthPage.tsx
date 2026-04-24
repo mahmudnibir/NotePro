@@ -38,15 +38,15 @@ export function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <Link to="/" className="flex justify-center items-center gap-2 mb-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-black text-white font-bold text-xl">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xl">
             N
           </div>
-          <span className="text-2xl font-bold tracking-tight">NotePro</span>
+          <span className="text-2xl font-bold tracking-tight text-foreground">NotePro</span>
         </Link>
-        <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+        <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-foreground">
           {isLogin ? 'Sign in to your account' : 'Create your account'}
         </h2>
       </div>
@@ -56,7 +56,7 @@ export function AuthPage() {
           <CardContent className="pt-6">
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Email address</label>
+                <label className="block text-sm font-medium text-foreground">Email address</label>
                 <div className="mt-1">
                   <Input 
                     type="email" 
@@ -70,7 +70,7 @@ export function AuthPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Password</label>
+                <label className="block text-sm font-medium text-foreground">Password</label>
                 <div className="mt-1">
                   <Input 
                     type="password" 
@@ -89,13 +89,13 @@ export function AuthPage() {
             </form>
             
             <div className="mt-6 text-center">
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-muted-foreground">
                 {isLogin ? "Don't have an account? " : "Already have an account? "}
               </span>
               <button 
                 type="button"
                 onClick={() => setIsLogin(!isLogin)}
-                className="text-sm font-medium text-black hover:underline"
+                className="text-sm font-medium text-primary hover:underline"
               >
                 {isLogin ? 'Sign up' : 'Sign in'}
               </button>

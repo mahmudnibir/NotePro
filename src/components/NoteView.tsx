@@ -70,41 +70,41 @@ export function NoteView() {
   };
 
   if (isLoading) {
-    return <div className="min-h-screen bg-gray-50 p-8 flex justify-center items-center">Loading...</div>;
+    return <div className="min-h-screen bg-background p-8 flex justify-center items-center text-foreground">Loading...</div>;
   }
 
   if (!note) {
-    return <div className="min-h-screen bg-gray-50 p-8 flex justify-center items-center">Note not found</div>;
+    return <div className="min-h-screen bg-background p-8 flex justify-center items-center text-foreground">Note not found</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden min-h-[80vh] flex flex-col">
-        <div className="border-b border-gray-200 p-4 flex items-center justify-between bg-gray-50/50">
-          <Button variant="ghost" onClick={() => navigate('/notes')} className="text-gray-500 hover:text-gray-900">
+    <div className="min-h-screen bg-background p-4 md:p-8">
+      <div className="max-w-4xl mx-auto bg-surface rounded-lg shadow-sm border border-border overflow-hidden min-h-[80vh] flex flex-col">
+        <div className="border-b border-border p-4 flex items-center justify-between bg-muted/50">
+          <Button variant="ghost" onClick={() => navigate('/notes')} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Notes
           </Button>
           <div className="flex gap-2">
             {note.deletedAt ? (
-              <Button variant="outline" onClick={handleRestore} className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+              <Button variant="outline" onClick={handleRestore} className="text-muted-foreground hover:text-foreground hover:bg-accent">
                 <RotateCcw className="w-4 h-4 mr-2" />
                 Restore
               </Button>
             ) : (
               <>
-                <Button variant="outline" onClick={handleArchiveToggle} className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+                <Button variant="outline" onClick={handleArchiveToggle} className="text-muted-foreground hover:text-foreground hover:bg-accent">
                   <Archive className="w-4 h-4 mr-2" />
                   {note.isArchived ? 'Unarchive' : 'Archive'}
                 </Button>
-                <Button variant="outline" onClick={handleDelete} className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                <Button variant="outline" onClick={handleDelete} className="text-destructive hover:text-destructive hover:bg-destructive/10">
                   <Trash2 className="w-4 h-4 mr-2" />
                   Trash
                 </Button>
               </>
             )}
             {!note.deletedAt && (
-              <Button onClick={() => navigate(`/note/${id}/edit`)} className="bg-black text-white hover:bg-gray-800">
+              <Button onClick={() => navigate(`/note/${id}/edit`)} className="bg-primary text-primary-foreground hover:bg-primary/90">
                 <Edit2 className="w-4 h-4 mr-2" />
                 Edit Note
               </Button>
@@ -113,9 +113,9 @@ export function NoteView() {
         </div>
 
         <div className="p-8 flex-grow flex flex-col">
-          <h1 className="text-4xl font-bold text-gray-900 mb-6">{note.title}</h1>
+          <h1 className="text-4xl font-bold text-foreground mb-6">{note.title}</h1>
           
-          <div className="flex items-center gap-6 text-sm text-gray-500 mb-8 pb-6 border-b border-gray-100 flex-wrap">
+          <div className="flex items-center gap-6 text-sm text-muted-foreground mb-8 pb-6 border-b border-border flex-wrap">
             <div className="flex items-center">
               <Calendar className="w-4 h-4 mr-2" />
               Created {new Date(note.createdAt).toLocaleDateString()}
@@ -133,7 +133,7 @@ export function NoteView() {
                     <Badge
                       key={tag}
                       variant="secondary"
-                      className="bg-gray-100 text-gray-700 hover:bg-gray-200 cursor-pointer"
+                      className="bg-secondary text-secondary-foreground hover:bg-secondary/80 cursor-pointer"
                       onClick={() => navigate(`/notes?tag=${encodeURIComponent(tag)}`)}
                     >
                       {tag}
@@ -145,8 +145,8 @@ export function NoteView() {
           </div>
           
           <div 
-            className="prose prose-slate max-w-none prose-p:leading-relaxed prose-pre:bg-gray-50"
-            dangerouslySetInnerHTML={{ __html: note.content || '<p class="text-gray-400 italic">Empty note</p>' }}
+            className="prose prose-slate dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-muted"
+            dangerouslySetInnerHTML={{ __html: note.content || '<p class="text-muted-foreground italic">Empty note</p>' }}
           />
         </div>
       </div>

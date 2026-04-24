@@ -168,7 +168,7 @@ function NotesDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       <TopNav onMenuClick={() => setIsCommandMenuOpen(true)} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
       <AppContextMenu
         onNewNote={() => navigate('/note/new')}
@@ -177,27 +177,27 @@ function NotesDashboard() {
         onOpenTrash={() => setCurrentFilter('trash')}
       >
         <div className="flex-grow flex overflow-hidden">
-          <aside className="w-64 bg-white border-r border-gray-200 hidden md:flex flex-col p-4">
+          <aside className="w-64 bg-surface border-r border-border hidden md:flex flex-col p-4">
             <nav className="space-y-2">
               <button
                 onClick={() => setCurrentFilter('all')}
-                className={`w-full flex items-center px-4 py-2 text-sm font-medium rounded-md ${currentFilter === 'all' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
+                className={`w-full flex items-center px-4 py-2 text-sm font-medium rounded-md ${currentFilter === 'all' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}`}
               >
-                <FileText className="w-5 h-5 mr-3 text-gray-500" />
+                <FileText className="w-5 h-5 mr-3 text-muted-foreground" />
                 Notes
               </button>
               <button
                 onClick={() => setCurrentFilter('archive')}
-                className={`w-full flex items-center px-4 py-2 text-sm font-medium rounded-md ${currentFilter === 'archive' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
+                className={`w-full flex items-center px-4 py-2 text-sm font-medium rounded-md ${currentFilter === 'archive' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}`}
               >
-                <Archive className="w-5 h-5 mr-3 text-gray-500" />
+                <Archive className="w-5 h-5 mr-3 text-muted-foreground" />
                 Archive
               </button>
               <button
                 onClick={() => setCurrentFilter('trash')}
-                className={`w-full flex items-center px-4 py-2 text-sm font-medium rounded-md ${currentFilter === 'trash' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
+                className={`w-full flex items-center px-4 py-2 text-sm font-medium rounded-md ${currentFilter === 'trash' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}`}
               >
-                <Trash2 className="w-5 h-5 mr-3 text-gray-500" />
+                <Trash2 className="w-5 h-5 mr-3 text-muted-foreground" />
                 Trash
               </button>
             </nav>
@@ -207,7 +207,7 @@ function NotesDashboard() {
             <div className="max-w-6xl mx-auto w-full space-y-4 md:space-y-5">
               <div className="flex flex-wrap justify-between items-start sm:items-center gap-3">
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                  <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                     {currentFilter === 'all'
                       ? 'My Notes'
                       : currentFilter === 'archive'
@@ -215,14 +215,14 @@ function NotesDashboard() {
                       : 'Trash'}
                   </h1>
                   {activeTag && (
-                    <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
-                      <span className="px-2 py-1 rounded-full bg-gray-100">Tag: {activeTag}</span>
+                    <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                      <span className="px-2 py-1 rounded-full bg-accent text-accent-foreground">Tag: {activeTag}</span>
                       <button
                         onClick={() => {
                           setActiveTag(null);
                           navigate('/notes');
                         }}
-                        className="text-xs text-gray-500 hover:text-gray-800"
+                        className="text-xs text-muted-foreground hover:text-foreground"
                       >
                         Clear
                       </button>
@@ -232,7 +232,7 @@ function NotesDashboard() {
                 {currentFilter !== 'trash' && (
                   <Link
                     to="/note/new"
-                    className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors inline-block text-sm font-medium shadow-sm"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors inline-block text-sm font-medium shadow-sm"
                   >
                     New Note
                   </Link>
@@ -241,20 +241,20 @@ function NotesDashboard() {
 
               {currentFilter === 'all' ? (
                 <div className="space-y-3 md:space-y-4">
-                  <section className="rounded-xl border border-yellow-200/70 bg-gradient-to-b from-yellow-50/80 to-white p-3 md:p-4 space-y-3">
+                  <section className="rounded-xl border border-yellow-200/70 dark:border-yellow-900/50 bg-gradient-to-b from-yellow-50/80 to-surface dark:from-yellow-900/20 dark:to-background p-3 md:p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-sm font-semibold text-yellow-900">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-yellow-900 dark:text-yellow-500">
                         <Pin className="w-4 h-4 text-yellow-500" />
                         Pinned
                       </div>
-                      <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-yellow-700 ring-1 ring-yellow-200/80">
+                      <span className="rounded-full bg-surface dark:bg-yellow-900/30 px-2 py-0.5 text-xs font-semibold text-yellow-700 dark:text-yellow-500 ring-1 ring-yellow-200/80 dark:ring-yellow-900/50">
                         {pinned.length}/5
                       </span>
                     </div>
                     {pinned.length === 0 ? (
-                      <div className="rounded-lg border border-dashed border-yellow-300 bg-white px-4 py-3 text-sm text-gray-600">
-                        <p className="font-medium text-gray-800">No pinned notes yet</p>
-                        <p className="mt-1 text-xs text-gray-500">Use right-click on any note and choose Pin. Your top 5 pinned notes stay here for quick access.</p>
+                      <div className="rounded-lg border border-dashed border-yellow-300 dark:border-yellow-900/50 bg-surface dark:bg-background px-4 py-3 text-sm text-muted-foreground">
+                        <p className="font-medium text-foreground">No pinned notes yet</p>
+                        <p className="mt-1 text-xs text-muted-foreground">Use right-click on any note and choose Pin. Your top 5 pinned notes stay here for quick access.</p>
                       </div>
                     ) : (
                       <NotesList
@@ -268,29 +268,29 @@ function NotesDashboard() {
                   </section>
 
                   {isLoading ? (
-                    <div className="min-h-[32vh] flex items-center justify-center text-center text-gray-500">Loading notes...</div>
+                    <div className="min-h-[32vh] flex items-center justify-center text-center text-muted-foreground">Loading notes...</div>
                   ) : isEmptyState ? (
-                    <div className="rounded-xl border border-gray-200 bg-white px-6 py-7 text-center shadow-sm">
-                      <div className="w-14 h-14 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                        <FileText className="w-8 h-8 text-gray-400" />
+                    <div className="rounded-xl border border-border bg-surface px-6 py-7 text-center shadow-sm">
+                      <div className="w-14 h-14 mx-auto mb-4 bg-accent rounded-full flex items-center justify-center">
+                        <FileText className="w-8 h-8 text-muted-foreground" />
                       </div>
-                      <h3 className="text-xl font-medium text-gray-900 mb-2">No notes found</h3>
-                      <p className="text-gray-500 max-w-sm mx-auto mb-4">Create a note to start organizing your thoughts, or adjust your search.</p>
-                      <Link to="/note/new" className="px-4 py-2.5 bg-black text-white rounded-md hover:bg-gray-800 transition-colors inline-block text-sm font-medium shadow-sm">
+                      <h3 className="text-xl font-medium text-foreground mb-2">No notes found</h3>
+                      <p className="text-muted-foreground max-w-sm mx-auto mb-4">Create a note to start organizing your thoughts, or adjust your search.</p>
+                      <Link to="/note/new" className="px-4 py-2.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors inline-block text-sm font-medium shadow-sm">
                         Create Note
                       </Link>
                     </div>
                   ) : (
                     <>
                       {others.length > 0 && (
-                        <div className="flex items-center justify-between border-b border-gray-200 pb-2 pt-1">
-                          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">All Notes</h2>
-                          <span className="text-xs text-gray-500">{others.length} shown</span>
+                        <div className="flex items-center justify-between border-b border-border pb-2 pt-1">
+                          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">All Notes</h2>
+                          <span className="text-xs text-muted-foreground">{others.length} shown</span>
                         </div>
                       )}
 
                       {others.length === 0 ? (
-                        <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
+                        <div className="rounded-lg border border-border bg-surface p-4 text-sm text-muted-foreground">
                           All matching notes are pinned above.
                         </div>
                       ) : (
@@ -305,17 +305,17 @@ function NotesDashboard() {
                   )}
                 </div>
               ) : isLoading ? (
-                <div className="min-h-[44vh] flex items-center justify-center text-center text-gray-500">Loading notes...</div>
+                <div className="min-h-[44vh] flex items-center justify-center text-center text-muted-foreground">Loading notes...</div>
               ) : isEmptyState ? (
                 <div className="flex min-h-[calc(100vh-17rem)] md:min-h-[calc(100vh-18rem)] items-center justify-center px-4">
-                  <div className="mx-auto flex max-w-md -translate-y-10 md:-translate-y-12 flex-col items-center text-center rounded-xl border border-gray-200 bg-white px-6 py-7 shadow-sm">
-                    <div className="w-14 h-14 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                      <FileText className="w-8 h-8 text-gray-400" />
+                  <div className="mx-auto flex max-w-md -translate-y-10 md:-translate-y-12 flex-col items-center text-center rounded-xl border border-border bg-surface px-6 py-7 shadow-sm">
+                    <div className="w-14 h-14 mx-auto mb-4 bg-accent rounded-full flex items-center justify-center">
+                      <FileText className="w-8 h-8 text-muted-foreground" />
                     </div>
-                    <h3 className="text-xl font-medium text-gray-900 mb-2">No notes found</h3>
-                    <p className="text-gray-500 max-w-sm mx-auto mb-4">Create a note to start organizing your thoughts, or adjust your search.</p>
+                    <h3 className="text-xl font-medium text-foreground mb-2">No notes found</h3>
+                    <p className="text-muted-foreground max-w-sm mx-auto mb-4">Create a note to start organizing your thoughts, or adjust your search.</p>
                     {currentFilter !== 'trash' && (
-                      <Link to="/note/new" className="px-4 py-2.5 bg-black text-white rounded-md hover:bg-gray-800 transition-colors inline-block text-sm font-medium shadow-sm">
+                      <Link to="/note/new" className="px-4 py-2.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors inline-block text-sm font-medium shadow-sm">
                         Create Note
                       </Link>
                     )}

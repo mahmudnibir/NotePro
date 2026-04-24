@@ -40,23 +40,23 @@ export function TopNav({ onMenuClick, searchTerm, setSearchTerm }: TopNavProps) 
   const isNotesPage = location.pathname === '/notes'
 
   return (
-    <nav className="sticky top-0 z-50 w-full bg-white border-b border-gray-200">
+    <nav className="sticky top-0 z-50 w-full bg-surface border-b border-border">
       <div className="w-full px-4">
         <div className="flex justify-between h-14 items-center">
           <Link to="/" className="flex items-center space-x-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black text-white font-bold text-base">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-base">
               N
             </div>
-            <span className="text-xl font-bold tracking-tight text-gray-900 hidden sm:block">NotePro</span>
+            <span className="text-xl font-bold tracking-tight text-foreground hidden sm:block">NotePro</span>
           </Link>
           
           {isNotesPage && setSearchTerm && (
             <div className="flex-1 max-w-md mx-4 relative hidden md:block">
-              <Search className="absolute left-2.5 top-2 h-4 w-4 text-gray-500" />
+              <Search className="absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Search notes..."
-                className="w-full pl-9 bg-gray-50 border-gray-200 focus-visible:ring-black h-8 text-sm"
+                className="w-full pl-9 bg-background border-border focus-visible:ring-primary h-8 text-sm"
                 value={searchTerm || ''}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -67,7 +67,7 @@ export function TopNav({ onMenuClick, searchTerm, setSearchTerm }: TopNavProps) 
             <Button
               variant="outline"
               size="sm"
-              className="text-gray-500 hover:text-gray-900 h-8"
+              className="text-muted-foreground hover:text-foreground h-8"
               onClick={onMenuClick}
             >
               <Command className="mr-2 h-4 w-4 hidden sm:block" />
@@ -78,7 +78,7 @@ export function TopNav({ onMenuClick, searchTerm, setSearchTerm }: TopNavProps) 
               variant="ghost"
               size="sm"
               onClick={() => setIsSignOutOpen(true)}
-              className="text-gray-600 hover:text-red-600 h-8 hidden sm:flex"
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8 hidden sm:flex"
             >
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
@@ -88,7 +88,7 @@ export function TopNav({ onMenuClick, searchTerm, setSearchTerm }: TopNavProps) 
               variant="ghost"
               size="icon"
               onClick={() => setIsSignOutOpen(true)}
-              className="text-gray-600 hover:text-red-600 sm:hidden h-8 w-8"
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 sm:hidden h-8 w-8"
             >
               <LogOut className="h-4 w-4" />
             </Button>
@@ -100,12 +100,12 @@ export function TopNav({ onMenuClick, searchTerm, setSearchTerm }: TopNavProps) 
           <DialogHeader>
             <DialogTitle>Sign out of NotePro?</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-gray-600">You can sign back in any time. Unsaved changes will be kept locally.</p>
+          <p className="text-sm text-muted-foreground">You can sign back in any time. Unsaved changes will be kept locally.</p>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsSignOutOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleLogout} className="bg-black text-white hover:bg-gray-800">
+            <Button onClick={handleLogout} className="bg-primary text-primary-foreground hover:bg-primary/90">
               Sign Out
             </Button>
           </DialogFooter>

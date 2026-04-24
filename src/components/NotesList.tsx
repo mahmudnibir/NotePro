@@ -138,13 +138,13 @@ export function NotesList({ notes, view, onAction, onTagSelect, isPinnedSection 
             tabIndex={0}
             data-note-contextmenu
           >
-            <Card className={`h-full hover:shadow-lg transition-shadow border-l-4 ${note.isPinned ? 'border-yellow-500 bg-yellow-50/40' : 'border-blue-500'} focus-within:ring-2 focus-within:ring-gray-200`}>
+            <Card className={`h-full hover:shadow-lg transition-shadow border-l-4 ${note.isPinned ? 'border-yellow-500 bg-yellow-50/40 dark:bg-yellow-900/20' : 'border-blue-500'} focus-within:ring-2 focus-within:ring-border bg-card text-card-foreground`}>
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-start">
-                  <CardTitle className={`text-lg font-bold ${note.isPinned ? 'text-yellow-700' : 'text-blue-700'}`}>{note.title}</CardTitle>
+                  <CardTitle className={`text-lg font-bold ${note.isPinned ? 'text-yellow-700 dark:text-yellow-500' : 'text-blue-700 dark:text-blue-400'}`}>{note.title}</CardTitle>
                   {note.isPinned && <Pin className="w-4 h-4 text-yellow-500 fill-current" />}
                 </div>
-                <div className="flex items-center text-xs text-gray-500">
+                <div className="flex items-center text-xs text-muted-foreground">
                   <Calendar className="w-3 h-3 mr-1" />
                   <span>{new Date(note.createdAt).toLocaleDateString()}</span>
                   <Clock className="w-3 h-3 ml-2 mr-1" />
@@ -152,17 +152,17 @@ export function NotesList({ notes, view, onAction, onTagSelect, isPinnedSection 
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-700 line-clamp-3">{stripHtml(note.content)}</p>
+                <p className="text-sm text-foreground line-clamp-3">{stripHtml(note.content)}</p>
               </CardContent>
               <CardFooter className="pt-2">
                 <div className="flex items-center">
-                  <Tag className="w-4 h-4 mr-2 text-gray-500" />
+                  <Tag className="w-4 h-4 mr-2 text-muted-foreground" />
                   <div className="flex flex-wrap gap-1">
                     {note.tags && note.tags.map((tag) => (
                       <Badge
                         key={tag}
                         variant="secondary"
-                        className="text-xs bg-gray-200 text-gray-700 hover:bg-gray-300"
+                        className="text-xs bg-secondary text-secondary-foreground hover:bg-secondary/80"
                         onClick={(event) => {
                           event.stopPropagation();
                           onTagSelect?.(tag);
@@ -184,40 +184,40 @@ export function NotesList({ notes, view, onAction, onTagSelect, isPinnedSection 
           <div
             ref={menuRef}
             role="menu"
-            className="fixed z-50 w-[176px] rounded-md border border-gray-200 bg-white p-0.5 shadow-lg animate-in fade-in-0 zoom-in-95"
+            className="fixed z-50 w-[176px] rounded-md border border-border bg-popover p-0.5 shadow-lg animate-in fade-in-0 zoom-in-95 text-popover-foreground"
             style={{ left: adjustedMenuState?.x ?? menuState.x, top: adjustedMenuState?.y ?? menuState.y }}
           >
-            <button type="button" role="menuitem" className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-gray-700 hover:bg-gray-100" onClick={() => runAction('open')}>
+            <button type="button" role="menuitem" className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-foreground hover:bg-accent hover:text-accent-foreground" onClick={() => runAction('open')}>
               Open
             </button>
-            <button type="button" role="menuitem" className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-gray-700 hover:bg-gray-100" onClick={() => runAction('open-new')}>
+            <button type="button" role="menuitem" className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-foreground hover:bg-accent hover:text-accent-foreground" onClick={() => runAction('open-new')}>
               Open in New Tab
             </button>
-            <button type="button" role="menuitem" className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-gray-700 hover:bg-gray-100" onClick={() => runAction('edit-title')}>
+            <button type="button" role="menuitem" className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-foreground hover:bg-accent hover:text-accent-foreground" onClick={() => runAction('edit-title')}>
               Edit Title
             </button>
 
             {view !== 'trash' ? (
               <>
-                <div className="my-0.5 h-px bg-gray-100" />
-                <button type="button" role="menuitem" className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-gray-700 hover:bg-gray-100" onClick={() => runAction('pin')}>
+                <div className="my-0.5 h-px bg-border" />
+                <button type="button" role="menuitem" className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-foreground hover:bg-accent hover:text-accent-foreground" onClick={() => runAction('pin')}>
                   {menuState.note.isPinned ? 'Unpin' : 'Pin'}
                 </button>
-                <button type="button" role="menuitem" className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-gray-700 hover:bg-gray-100" onClick={() => runAction('archive')}>
+                <button type="button" role="menuitem" className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-foreground hover:bg-accent hover:text-accent-foreground" onClick={() => runAction('archive')}>
                   {menuState.note.isArchived ? 'Restore from Archive' : 'Archive'}
                 </button>
-                <div className="my-0.5 h-px bg-gray-100" />
-                <button type="button" role="menuitem" className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-red-600 hover:bg-red-50" onClick={() => runAction('delete')}>
+                <div className="my-0.5 h-px bg-border" />
+                <button type="button" role="menuitem" className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-destructive hover:bg-destructive/10" onClick={() => runAction('delete')}>
                   Move to Trash
                 </button>
               </>
             ) : (
               <>
-                <div className="my-0.5 h-px bg-gray-100" />
-                <button type="button" role="menuitem" className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-gray-700 hover:bg-gray-100" onClick={() => runAction('restore')}>
+                <div className="my-0.5 h-px bg-border" />
+                <button type="button" role="menuitem" className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-foreground hover:bg-accent hover:text-accent-foreground" onClick={() => runAction('restore')}>
                   Restore
                 </button>
-                <button type="button" role="menuitem" className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-red-600 hover:bg-red-50" onClick={() => runAction('delete-forever')}>
+                <button type="button" role="menuitem" className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-destructive hover:bg-destructive/10" onClick={() => runAction('delete-forever')}>
                   Delete Permanently
                 </button>
               </>
