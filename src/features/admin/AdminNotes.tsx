@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { fetchAllNotes, bulkNoteAction } from "./adminApi";
 import { Card, CardContent } from "../../components/ui/card";
 import { toast } from "react-hot-toast";
-import { ChevronLeft, ChevronRight, Search, Filter, Trash2, Archive, RotateCcw, CheckSquare, Square, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, Filter, Trash2, Archive, RotateCcw, CheckSquare, Square, X, Eye } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { useLocation, useNavigate } from "react-router-dom";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 
 export function AdminNotes() {
   const location = useLocation();
@@ -18,6 +19,7 @@ export function AdminNotes() {
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [viewingNote, setViewingNote] = useState<any>(null);
   
   const userIdFilter = queryParams.get("userId");
   const tagFilter = queryParams.get("tag");
@@ -142,9 +144,9 @@ export function AdminNotes() {
                   </thead>
                   <tbody className="divide-y divide-border">
                     {notes.map((note) => (
-                      <tr key={note.id} className={`hover:bg-muted/50 transition-colors ${selectedIds.has(note.id) ? 'bg-primary/5' : ''}`}>
-                        <td className="px-6 py-4">
-                          <button onClick={() => toggleSelect(note.id)}>
+                      <tr key={note.id} className={`hover:bg-muted/50 transition-colors cursor-pointer ${selectedIds.has(note.id) ? 'bg-primary/5' : ''}`} onClick={() => setViewingNote(note)}>
+                        <td className="px-6 py-4" onClick={(e) => { e.stopPropagation(); toggleSelect(note.id); }}>
+                          <button>
                             {selectedIds.has(note.id) ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4" />}
                           </button>
                         </td>
@@ -154,7 +156,7 @@ export function AdminNotes() {
                             <span className="text-[10px] text-muted-foreground font-mono">{note.id}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                           <button 
                             className="text-primary hover:underline font-medium"
                             onClick={() => navigate(`/admin/notes?userId=${note.user_id}`)}
@@ -202,6 +204,34 @@ export function AdminNotes() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!viewingNote} onOpenChange={() => setViewingNote(null)}>
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between pr-8">
+              <span>{viewingNote?.title || "Untitled Note"}</span>
+              <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-1 rounded">
+                ID: {viewingNote?.id}
+              </span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="mt-4 space-y-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground border-b pb-4">
+              <div className="flex gap-4">
+                <span>Owner: <strong>{viewingNote?.user_email}</strong></span>
+                <span>Created: {viewingNote && new Date(viewingNote.created_at).toLocaleString()}</span>
+              </div>
+              <span className={`px-2 py-0.5 rounded-full font-bold uppercase ${viewingNote?.is_archived ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                {viewingNote?.is_archived ? 'Archived' : 'Active'}
+              </span>
+            </div>
+            <div 
+              className="prose prose-sm dark:prose-invert max-w-none bg-muted/30 p-6 rounded-xl border border-border min-h-[200px]"
+              dangerouslySetInnerHTML={{ __html: viewingNote?.content || "<p class='text-muted-foreground italic'>No content</p>" }}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

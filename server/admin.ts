@@ -275,7 +275,7 @@ adminRouter.get("/notes", async (req, res) => {
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
     const notes = await db.execute(`
-      SELECT n.id, n.title, n.created_at, n.updated_at, n.deleted_at, n.is_archived, u.email as user_email, u.id as user_id
+      SELECT n.id, n.title, n.content, n.created_at, n.updated_at, n.deleted_at, n.is_archived, u.email as user_email, u.id as user_id
       FROM notes n
       JOIN users u ON n.user_id = u.id
       ${whereClause}
