@@ -310,14 +310,24 @@ function NotesDashboard() {
                 <div className="flex min-h-[calc(100vh-17rem)] md:min-h-[calc(100vh-18rem)] items-center justify-center px-4">
                   <div className="mx-auto flex max-w-md -translate-y-10 md:-translate-y-12 flex-col items-center text-center rounded-xl border border-border bg-surface px-6 py-7 shadow-sm">
                     <div className="w-14 h-14 mx-auto mb-4 bg-accent rounded-full flex items-center justify-center">
-                      <FileText className="w-8 h-8 text-muted-foreground" />
+                      {currentFilter === 'trash' ? (
+                        <Trash2 className="w-8 h-8 text-muted-foreground" />
+                      ) : currentFilter === 'archive' ? (
+                        <Archive className="w-8 h-8 text-muted-foreground" />
+                      ) : (
+                        <FileText className="w-8 h-8 text-muted-foreground" />
+                      )}
                     </div>
-                    <h3 className="text-xl font-medium text-foreground mb-2">No notes found</h3>
-                    <p className="text-muted-foreground max-w-sm mx-auto mb-4">Create a note to start organizing your thoughts, or adjust your search.</p>
-                    {currentFilter !== 'trash' && (
-                      <Link to="/note/new" className="px-4 py-2.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors inline-block text-sm font-medium shadow-sm">
-                        Create Note
-                      </Link>
+                    <h3 className="text-xl font-medium text-foreground mb-2">
+                      {currentFilter === 'trash' ? 'Trash is empty' : currentFilter === 'archive' ? 'Archive is empty' : 'No notes found'}
+                    </h3>
+                    {currentFilter === 'all' && (
+                      <>
+                        <p className="text-muted-foreground max-w-sm mx-auto mb-4">Create a note to start organizing your thoughts, or adjust your search.</p>
+                        <Link to="/note/new" className="px-4 py-2.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors inline-block text-sm font-medium shadow-sm">
+                          Create Note
+                        </Link>
+                      </>
                     )}
                   </div>
                 </div>
