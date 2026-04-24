@@ -10,8 +10,23 @@ export const fetchAnalytics = async (timeRange: "7d" | "30d" = "30d") => {
   return data;
 };
 
-export const fetchUsers = async (page = 1, limit = 50) => {
-  const { data } = await api.get("/admin/users", { params: { page, limit } });
+export const fetchUsers = async (page = 1, limit = 50, search = "") => {
+  const { data } = await api.get("/admin/users", { params: { page, limit, search } });
+  return data;
+};
+
+export const createUser = async (userData: any) => {
+  const { data } = await api.post("/admin/users", userData);
+  return data;
+};
+
+export const updateUser = async (id: string, userData: any) => {
+  const { data } = await api.patch(`/admin/users/${id}`, userData);
+  return data;
+};
+
+export const bulkUserAction = async (ids: string[], action: string, value?: any) => {
+  const { data } = await api.post("/admin/users/bulk", { ids, action, value });
   return data;
 };
 
@@ -25,8 +40,13 @@ export const deleteUser = async (id: string) => {
   return data;
 };
 
-export const fetchAllNotes = async (page = 1, limit = 50) => {
-  const { data } = await api.get("/admin/notes", { params: { page, limit } });
+export const fetchAllNotes = async (params: { page?: number; limit?: number; userId?: string; tag?: string; search?: string }) => {
+  const { data } = await api.get("/admin/notes", { params });
+  return data;
+};
+
+export const bulkNoteAction = async (ids: string[], action: string) => {
+  const { data } = await api.post("/admin/notes/bulk", { ids, action });
   return data;
 };
 

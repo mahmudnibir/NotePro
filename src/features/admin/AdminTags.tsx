@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { toast } from "react-hot-toast";
 import { fetchAllTags, deleteTag, renameTag } from "./adminApi";
-import { Trash2, Edit2, Check, X } from "lucide-react";
+import { Trash2, Edit2, Check, X, Eye } from "lucide-react";
 
 export function AdminTags() {
+  const navigate = useNavigate();
   const [tags, setTags] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -118,8 +120,15 @@ export function AdminTags() {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-muted-foreground">
-                        {tag.count || 0}
+                      <td className="px-6 py-4">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 text-xs gap-1.5"
+                          onClick={() => navigate(`/admin/notes?tag=${tag.name}`)}
+                        >
+                          <Eye className="w-3 h-3" /> {tag.count || 0}
+                        </Button>
                       </td>
                       <td className="px-6 py-4 text-right space-x-2">
                         {editingId === tag.id ? (

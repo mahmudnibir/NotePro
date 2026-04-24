@@ -64,26 +64,30 @@ export function AdminAnalytics() {
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={userGrowth}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
-                  dataKey="date" 
-                  stroke="var(--color-muted-foreground)"
-                  style={{ fontSize: "12px" }}
+                   dataKey="date" 
+                   stroke="hsl(var(--muted-foreground))"
+                   style={{ fontSize: "12px" }}
                 />
-                <YAxis stroke="var(--color-muted-foreground)" style={{ fontSize: "12px" }} />
+                <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: "12px" }} />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: "var(--color-background)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: "8px"
+                    backgroundColor: "hsl(var(--background))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                    color: "hsl(var(--foreground))"
                   }}
+                  itemStyle={{ color: "hsl(var(--primary))" }}
                 />
                 <Legend />
                 <Line 
                   type="monotone" 
                   dataKey="count" 
-                  stroke="var(--color-primary)" 
-                  dot={{ fill: "var(--color-primary)" }}
+                  stroke="hsl(var(--primary))" 
+                  strokeWidth={2}
+                  dot={{ fill: "hsl(var(--primary))", r: 4 }}
+                  activeDot={{ r: 6 }}
                   name="New Users"
                 />
               </LineChart>
@@ -98,26 +102,27 @@ export function AdminAnalytics() {
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={notesGrowth}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
-                  dataKey="date" 
-                  stroke="var(--color-muted-foreground)"
-                  style={{ fontSize: "12px" }}
+                   dataKey="date" 
+                   stroke="hsl(var(--muted-foreground))"
+                   style={{ fontSize: "12px" }}
                 />
-                <YAxis stroke="var(--color-muted-foreground)" style={{ fontSize: "12px" }} />
+                <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: "12px" }} />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: "var(--color-background)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: "8px"
+                    backgroundColor: "hsl(var(--background))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                    color: "hsl(var(--foreground))"
                   }}
                 />
                 <Legend />
                 <Bar 
                   dataKey="count" 
-                  fill="var(--color-accent)"
+                  fill="hsl(var(--chart-1))"
                   name="Notes Created"
-                  radius={[8, 8, 0, 0]}
+                  radius={[4, 4, 0, 0]}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -132,28 +137,29 @@ export function AdminAnalytics() {
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={tagFrequency.slice(0, 10)}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis 
                     dataKey="name" 
                     angle={-45}
                     textAnchor="end"
                     height={80}
-                    stroke="var(--color-muted-foreground)"
+                    stroke="hsl(var(--muted-foreground))"
                     style={{ fontSize: "12px" }}
                   />
-                  <YAxis stroke="var(--color-muted-foreground)" style={{ fontSize: "12px" }} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: "12px" }} />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: "var(--color-background)",
-                      border: "1px solid var(--color-border)",
-                      borderRadius: "8px"
+                      backgroundColor: "hsl(var(--background))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                      color: "hsl(var(--foreground))"
                     }}
                   />
                   <Bar 
                     dataKey="count" 
-                    fill="var(--color-primary)"
+                    fill="hsl(var(--chart-2))"
                     name="Count"
-                    radius={[8, 8, 0, 0]}
+                    radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>

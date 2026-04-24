@@ -1,4 +1,6 @@
 import { Router, RequestHandler } from "express";
+import { v4 as uuidv4 } from "uuid";
+import bcrypt from "bcryptjs";
 import { db } from "./db.js";
 import { authenticate, requireAdmin, AuthRequest } from "./middleware.js";
 import { logAudit } from "./audit.js";
@@ -76,18 +78,23 @@ adminRouter.get("/users", async (req, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+    const search = (req.query.search as string) || "";
     const offset = (page - 1) * limit;
+
+    const whereClause = search ? "WHERE u.email LIKE ?" : "";
+    const args = search ? [`%${search}%`, limit, offset] : [limit, offset];
 
     const users = await db.execute(`
       SELECT u.id, u.email, u.role, u.is_suspended, u.created_at, COUNT(n.id) as note_count
       FROM users u
       LEFT JOIN notes n ON u.id = n.user_id AND n.deleted_at IS NULL
+      ${whereClause}
       GROUP BY u.id
       ORDER BY u.created_at DESC
       LIMIT ? OFFSET ?
-    `, [limit, offset]);
+    `, args);
 
-    const countResult = await db.execute("SELECT COUNT(*) as count FROM users");
+    const countResult = await db.execute(`SELECT COUNT(*) as count FROM users ${whereClause}`, search ? [`%${search}%`] : []);
     
     res.json({
       data: users.rows.map((r) => ({
@@ -102,6 +109,102 @@ adminRouter.get("/users", async (req, res) => {
     });
   } catch {
     res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+adminRouter.post("/users", async (req: AuthRequest, res) => {
+  try {
+    const { email, password, role } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const id = uuidv4();
+
+    await db.execute({
+      sql: "INSERT INTO users (id, email, password, role) VALUES (?, ?, ?, ?)",
+      args: [id, email, hashedPassword, role || "user"],
+    });
+
+    await logAudit("admin_create_user", req.userId as string, id, { email, role });
+    res.json({ success: true, id });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to create user" });
+  }
+});
+
+adminRouter.patch("/users/:id", async (req: AuthRequest, res) => {
+  try {
+    const id = req.params.id as string;
+    const { email, role, isSuspended, password } = req.body;
+    
+    const updates: string[] = [];
+    const args: any[] = [];
+
+    if (email !== undefined) {
+      updates.push("email = ?");
+      args.push(email);
+    }
+    if (role !== undefined) {
+      updates.push("role = ?");
+      args.push(role);
+    }
+    if (isSuspended !== undefined) {
+      updates.push("is_suspended = ?");
+      args.push(isSuspended ? 1 : 0);
+    }
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updates.push("password = ?");
+      args.push(hashedPassword);
+    }
+
+    if (updates.length === 0) return res.json({ success: true });
+
+    args.push(id);
+    await db.execute({
+      sql: `UPDATE users SET ${updates.join(", ")}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      args,
+    });
+
+    await logAudit("admin_update_user", req.userId as string, id, { updates: Object.keys(req.body) });
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: "Failed to update user" });
+  }
+});
+
+adminRouter.post("/users/bulk", async (req: AuthRequest, res) => {
+  try {
+    const { ids, action, value } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: "User IDs are required" });
+    }
+
+    const placeholders = ids.map(() => "?").join(",");
+    
+    if (action === "suspend") {
+      await db.execute({
+        sql: `UPDATE users SET is_suspended = ? WHERE id IN (${placeholders})`,
+        args: [value ? 1 : 0, ...ids],
+      });
+    } else if (action === "role") {
+      await db.execute({
+        sql: `UPDATE users SET role = ? WHERE id IN (${placeholders})`,
+        args: [value, ...ids],
+      });
+    } else if (action === "delete") {
+      await db.execute({
+        sql: `UPDATE users SET is_suspended = 1 WHERE id IN (${placeholders})`,
+        args: [...ids],
+      });
+    }
+
+    await logAudit(`admin_bulk_${action}`, req.userId as string, "bulk", { count: ids.length });
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: "Bulk action failed" });
   }
 });
 
@@ -148,18 +251,39 @@ adminRouter.get("/notes", async (req, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+    const userId = req.query.userId as string;
+    const tag = req.query.tag as string;
+    const search = req.query.search as string;
     const offset = (page - 1) * limit;
+
+    const conditions = ["n.deleted_at IS NULL"];
+    const args: any[] = [];
+
+    if (userId) {
+      conditions.push("n.user_id = ?");
+      args.push(userId);
+    }
+    if (tag) {
+      conditions.push("n.id IN (SELECT note_id FROM note_tags nt JOIN tags t ON nt.tag_id = t.id WHERE t.name = ?)");
+      args.push(tag);
+    }
+    if (search) {
+      conditions.push("(n.title LIKE ? OR n.content LIKE ?)");
+      args.push(`%${search}%`, `%${search}%`);
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
     const notes = await db.execute(`
       SELECT n.id, n.title, n.created_at, n.updated_at, n.deleted_at, n.is_archived, u.email as user_email, u.id as user_id
       FROM notes n
       JOIN users u ON n.user_id = u.id
-      WHERE n.deleted_at IS NULL
+      ${whereClause}
       ORDER BY n.updated_at DESC
       LIMIT ? OFFSET ?
-    `, [limit, offset]);
+    `, [...args, limit, offset]);
 
-    const countResult = await db.execute("SELECT COUNT(*) as count FROM notes WHERE deleted_at IS NULL");
+    const countResult = await db.execute(`SELECT COUNT(*) as count FROM notes n ${whereClause}`, args);
     
     res.json({
       data: notes.rows,
@@ -171,6 +295,37 @@ adminRouter.get("/notes", async (req, res) => {
     });
   } catch {
     res.status(500).json({ error: "Failed to fetch notes" });
+  }
+});
+
+adminRouter.post("/notes/bulk", async (req: AuthRequest, res) => {
+  try {
+    const { ids, action } = req.body;
+    if (!ids || !Array.isArray(ids)) return res.status(400).json({ error: "IDs required" });
+    
+    const placeholders = ids.map(() => "?").join(",");
+    
+    if (action === "delete") {
+      await db.execute({
+        sql: `DELETE FROM notes WHERE id IN (${placeholders})`,
+        args: ids,
+      });
+    } else if (action === "archive") {
+      await db.execute({
+        sql: `UPDATE notes SET is_archived = 1, archived_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`,
+        args: ids,
+      });
+    } else if (action === "restore") {
+      await db.execute({
+        sql: `UPDATE notes SET deleted_at = NULL WHERE id IN (${placeholders})`,
+        args: ids,
+      });
+    }
+
+    await logAudit(`admin_bulk_note_${action}`, req.userId as string, "bulk", { count: ids.length });
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: "Bulk action failed" });
   }
 });
 
