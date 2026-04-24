@@ -7,6 +7,7 @@ import { ArrowRight, Search } from "lucide-react"
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FeaturesSection } from './FeaturesSection'
+import { ThemeToggle } from './ThemeToggle'
 export function LandingPage() {
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false)
 
@@ -14,6 +15,9 @@ export function LandingPage() {
     <div className="min-h-screen flex flex-col">
 
       <main className="flex-grow">
+        <div className="absolute top-4 right-4 z-50">
+          <ThemeToggle />
+        </div>
         <section className="bg-background text-primary min-h-[calc(100vh-4rem)] flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8 relative overflow-hidden border-b border-border">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

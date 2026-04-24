@@ -1,4 +1,5 @@
 import { Button } from "./ui/button"
+import { ThemeToggle } from "./ThemeToggle"
 import { Command, LogOut, Search } from "lucide-react"
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
@@ -64,6 +65,7 @@ export function TopNav({ onMenuClick, searchTerm, setSearchTerm }: TopNavProps) 
           )}
 
           <div className="flex items-center space-x-2 sm:space-x-4">
+            <ThemeToggle />
             <Button
               variant="outline"
               size="sm"
