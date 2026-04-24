@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, RequestHandler } from "express";
 import { db } from "./db.js";
 import { authenticate, requireAdmin, AuthRequest } from "./middleware.js";
 import { logAudit } from "./audit.js";
@@ -6,7 +6,7 @@ import { realtimeRouter } from "./realtime.js";
 
 export const adminRouter = Router();
 
-adminRouter.use(authenticate, requireAdmin as any);
+adminRouter.use(authenticate, requireAdmin as unknown as RequestHandler);
 adminRouter.use("/realtime", realtimeRouter);
 
 adminRouter.get("/dashboard", async (req, res) => {
@@ -26,7 +26,7 @@ adminRouter.get("/dashboard", async (req, res) => {
       activeUsers: activeUsers.rows[0].count,
       deletedNotes: deletedNotes.rows[0].count,
     });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch dashboard metrics" });
   }
 });
@@ -67,7 +67,7 @@ adminRouter.get("/analytics", async (req, res) => {
       notesGrowth: notesGrowth.rows,
       tagFrequency: tagFrequency.rows,
     });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch analytics" });
   }
 });
@@ -100,14 +100,14 @@ adminRouter.get("/users", async (req, res) => {
         total: countResult.rows[0].count,
       },
     });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch users" });
   }
 });
 
 adminRouter.post("/users/:id/suspend", async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { isSuspended } = req.body;
     
     await db.execute({
@@ -122,14 +122,14 @@ adminRouter.post("/users/:id/suspend", async (req: AuthRequest, res) => {
     );
 
     res.json({ success: true });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to update user" });
   }
 });
 
 adminRouter.delete("/users/:id", async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     
     // Soft delete - suspend the user
     await db.execute({
@@ -139,7 +139,7 @@ adminRouter.delete("/users/:id", async (req: AuthRequest, res) => {
     
     await logAudit("delete_user", req.userId as string, id);
     res.json({ success: true });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to delete user" });
   }
 });
@@ -169,7 +169,7 @@ adminRouter.get("/notes", async (req, res) => {
         total: countResult.rows[0].count,
       },
     });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch notes" });
   }
 });
@@ -199,14 +199,14 @@ adminRouter.get("/notes/deleted", async (req, res) => {
         total: countResult.rows[0].count,
       },
     });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch deleted notes" });
   }
 });
 
 adminRouter.post("/notes/:id/restore", async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     
     await db.execute({
       sql: "UPDATE notes SET deleted_at = NULL WHERE id = ?",
@@ -215,14 +215,14 @@ adminRouter.post("/notes/:id/restore", async (req: AuthRequest, res) => {
     
     await logAudit("restore_note", req.userId as string, id);
     res.json({ success: true });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to restore note" });
   }
 });
 
 adminRouter.delete("/notes/:id", async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     
     await db.execute({
       sql: "DELETE FROM notes WHERE id = ?",
@@ -231,7 +231,7 @@ adminRouter.delete("/notes/:id", async (req: AuthRequest, res) => {
     
     await logAudit("delete_note_permanent", req.userId as string, id);
     res.json({ success: true });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to delete note" });
   }
 });
@@ -263,7 +263,7 @@ adminRouter.get("/audit", async (req, res) => {
         total: countResult.rows[0].count,
       },
     });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch audit logs" });
   }
 });
@@ -279,14 +279,14 @@ adminRouter.get("/tags", async (req, res) => {
     `);
     
     res.json(tags.rows);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch tags" });
   }
 });
 
 adminRouter.delete("/tags/:id", async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     
     await db.execute({
       sql: "DELETE FROM tags WHERE id = ?",
@@ -295,14 +295,14 @@ adminRouter.delete("/tags/:id", async (req: AuthRequest, res) => {
     
     await logAudit("delete_tag", req.userId as string, id);
     res.json({ success: true });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to delete tag" });
   }
 });
 
 adminRouter.patch("/tags/:id", async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { name } = req.body;
     
     if (!name) {
@@ -316,7 +316,7 @@ adminRouter.patch("/tags/:id", async (req: AuthRequest, res) => {
     
     await logAudit("rename_tag", req.userId as string, id, { name });
     res.json({ success: true });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to update tag" });
   }
 });
