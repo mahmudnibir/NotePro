@@ -30,6 +30,7 @@ export function AuthPage() {
       
       toast.success(isLogin ? 'Welcome back!' : 'Account created successfully!');
       navigate('/notes');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Authentication failed');
     } finally {

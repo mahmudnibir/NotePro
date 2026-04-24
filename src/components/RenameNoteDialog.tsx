@@ -36,7 +36,7 @@ export function RenameNoteDialog({ note, onClose, onSaved }: RenameNoteDialogPro
       await updateNote(note.id, { title: trimmed });
       toast.success("Title updated");
       onSaved();
-    } catch (error) {
+    } catch {
       toast.error("Failed to update title");
     } finally {
       setIsSaving(false);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from './ui/button';
 import { ArrowLeft, Edit2, Tag as TagIcon, Calendar, Clock, Trash2, Archive, RotateCcw } from 'lucide-react';
@@ -13,29 +13,29 @@ export function NoteView() {
   const [note, setNote] = useState<Note | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadNote();
-  }, [id]);
-
-  const loadNote = async () => {
+  const loadNote = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await fetchNote(id as string);
       setNote(response);
-    } catch (error) {
+    } catch {
       toast.error('Failed to load note');
       navigate('/notes');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [id, navigate]);
+
+  useEffect(() => {
+    loadNote();
+  }, [loadNote]);
 
   const handleDelete = async () => {
     try {
       await trashNote(id as string);
       toast.success('Note moved to trash');
       navigate('/notes');
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete note');
     }
   };
@@ -52,7 +52,7 @@ export function NoteView() {
         toast.success('Note archived');
       }
       loadNote();
-    } catch (error) {
+    } catch {
       toast.error('Failed to update archive status');
     }
   };
@@ -64,7 +64,7 @@ export function NoteView() {
       await restoreNote(note.id);
       toast.success('Note restored');
       navigate('/notes');
-    } catch (error) {
+    } catch {
       toast.error('Failed to restore note');
     }
   };
